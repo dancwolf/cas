@@ -370,6 +370,12 @@ def main() -> None:
     max_q = max(result.dynamic_pressure)
 
     print(f"Trajectory written to {output_path}")
+    if atmosphere_path is None:
+        print("Atmosphere: bundled Dugway September 21, 2021 12Z sounding")
+    else:
+        print(f"Atmosphere: {atmosphere_path}")
+
+    print(f"Trajectory written to {args.output}")
     print(f"Apogee: {apogee/1000:.2f} km")
     print(f"Max dynamic pressure: {max_q/1000:.1f} kPa")
     print(f"Final altitude logged: {result.altitude[-1]:.1f} m")
