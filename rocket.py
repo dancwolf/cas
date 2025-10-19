@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple
 
 from atmosphere import AtmosphereProfile, load_dugway_default_profile
 
@@ -57,7 +55,7 @@ class Rocket:
             total += stage.mass_full
         return total
 
-    def mass_and_thrust(self, t: float) -> Tuple[float, float, RocketStage | None]:
+    def mass_and_thrust(self, t: float) -> Tuple[float, float, Optional[RocketStage]]:
         """Return the instantaneous mass, thrust, and active stage at time ``t``."""
 
         elapsed = 0.0
@@ -389,14 +387,14 @@ def _default_atmosphere_paths() -> List[Path]:
     ]
 
 
-def find_default_atmosphere_path() -> Path | None:
+def find_default_atmosphere_path() -> Optional[Path]:
     for candidate in _default_atmosphere_paths():
         if candidate.exists():
             return candidate
     return None
 
 
-def load_atmosphere_profile(path: Path | None = None) -> AtmosphereProfile:
+def load_atmosphere_profile(path: Optional[Path] = None) -> AtmosphereProfile:
     """Load an atmosphere profile from ``path`` or fall back to the bundled sounding."""
 
     if path is not None:
@@ -411,7 +409,7 @@ def load_atmosphere_profile(path: Path | None = None) -> AtmosphereProfile:
     return load_dugway_default_profile()
 
 
-def resolve_atmosphere(path: Path | None = None) -> tuple[AtmosphereProfile, Path | None]:
+def resolve_atmosphere(path: Optional[Path] = None) -> Tuple[AtmosphereProfile, Optional[Path]]:
     """Return the atmosphere profile along with the concrete source path used."""
 
     if path is not None:
