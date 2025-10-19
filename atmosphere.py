@@ -4,7 +4,7 @@ import csv
 from bisect import bisect_left
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 
 @dataclass
@@ -15,6 +15,7 @@ class AtmosphericSample:
     density_kg_m3: float
     wind_u_ms: float
     wind_v_ms: float
+    wind_w_ms: float
 
 
 class AtmosphereProfile:
@@ -31,6 +32,7 @@ class AtmosphereProfile:
         self._density = [s.density_kg_m3 for s in self._samples]
         self._wind_u = [s.wind_u_ms for s in self._samples]
         self._wind_v = [s.wind_v_ms for s in self._samples]
+        self._wind_w = [s.wind_w_ms for s in self._samples]
 
     @classmethod
     def from_csv(cls, path: Path) -> "AtmosphereProfile":
@@ -46,6 +48,7 @@ class AtmosphereProfile:
                         density_kg_m3=float(row["density_kg_m3"]),
                         wind_u_ms=float(row.get("wind_u_ms", 0.0)),
                         wind_v_ms=float(row.get("wind_v_ms", 0.0)),
+                        wind_w_ms=float(row.get("wind_w_ms", 0.0)),
                     )
                 )
         return cls(samples)
@@ -74,11 +77,11 @@ class AtmosphereProfile:
     def density(self, altitude_m: float) -> float:
         return self._interp(self._density, altitude_m)
 
-    def wind_vector(self, altitude_m: float) -> List[float]:
+    def wind_vector(self, altitude_m: float) -> Tuple[float, float, float]:
         u = self._interp(self._wind_u, altitude_m)
         v = self._interp(self._wind_v, altitude_m)
-        # No vertical wind in the historical record we use; return zeros for w.
-        return [u, v, 0.0]
+        w = self._interp(self._wind_w, altitude_m)
+        return (u, v, w)
 
 
 def load_dugway_default_profile() -> AtmosphereProfile:

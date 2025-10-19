@@ -10,6 +10,7 @@ from rocket import (
     SimulationResult,
     build_default_rocket,
     default_guidance,
+    find_default_atmosphere_path,
     load_atmosphere_profile,
     simulate_flight,
 )
@@ -21,8 +22,8 @@ def _load_atmosphere(path: Path | None) -> Tuple[AtmosphereProfile, Path | None]
     if path is not None:
         return load_atmosphere_profile(path), path
 
-    candidate = Path("trajectory_dugway.csv")
-    if candidate.exists():
+    candidate = find_default_atmosphere_path()
+    if candidate is not None:
         return load_atmosphere_profile(candidate), candidate
 
     return load_atmosphere_profile(None), None

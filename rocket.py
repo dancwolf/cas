@@ -378,19 +378,37 @@ def default_guidance(state: VehicleState) -> Vector:
     return direction
 
 
+def _default_atmosphere_paths() -> List[Path]:
+    """Candidate locations for the Dugway trajectory profile."""
+
+    module_path = Path(__file__).resolve()
+    module_dir = module_path.parent
+    return [
+        Path.cwd() / "trajectory_dugway.csv",
+        module_dir / "trajectory_dugway.csv",
+    ]
+
+
+def find_default_atmosphere_path() -> Path | None:
+    for candidate in _default_atmosphere_paths():
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def load_atmosphere_profile(path: Path | None = None) -> AtmosphereProfile:
     """Load an atmosphere profile from ``path`` or fall back to the bundled sounding."""
 
-    if path is None:
-        candidate = Path("trajectory_dugway.csv")
-        if candidate.exists():
-            return AtmosphereProfile.from_csv(candidate)
-        return load_dugway_default_profile()
+    if path is not None:
+        resolved = path.expanduser()
+        if not resolved.exists():
+            raise FileNotFoundError(f"Atmosphere profile {resolved!s} does not exist")
+        return AtmosphereProfile.from_csv(resolved)
 
-    resolved = path.expanduser()
-    if not resolved.exists():
-        raise FileNotFoundError(f"Atmosphere profile {resolved!s} does not exist")
-    return AtmosphereProfile.from_csv(resolved)
+    default_path = find_default_atmosphere_path()
+    if default_path is not None:
+        return AtmosphereProfile.from_csv(default_path)
+    return load_dugway_default_profile()
 
 
 def simulate_flight(
