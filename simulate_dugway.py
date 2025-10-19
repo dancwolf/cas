@@ -2,15 +2,31 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Tuple
 
+from atmosphere import AtmosphereProfile
 from rocket import (
     AerodynamicProperties,
     SimulationResult,
     build_default_rocket,
     default_guidance,
-    resolve_atmosphere,
+    find_default_atmosphere_path,
+    load_atmosphere_profile,
     simulate_flight,
 )
+
+
+def _load_atmosphere(path: Path | None) -> Tuple[AtmosphereProfile, Path | None]:
+    """Load the requested atmosphere profile and report the source path used."""
+
+    if path is not None:
+        return load_atmosphere_profile(path), path
+
+    candidate = find_default_atmosphere_path()
+    if candidate is not None:
+        return load_atmosphere_profile(candidate), candidate
+
+    return load_atmosphere_profile(None), None
 
 
 def parse_args() -> argparse.Namespace:
@@ -51,7 +67,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    atmosphere, atmosphere_path = resolve_atmosphere(args.atmosphere)
+    atmosphere, atmosphere_path = _load_atmosphere(args.atmosphere)
     rocket = build_default_rocket()
 
     result: SimulationResult = simulate_flight(

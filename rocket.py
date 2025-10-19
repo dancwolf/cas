@@ -411,20 +411,6 @@ def load_atmosphere_profile(path: Path | None = None) -> AtmosphereProfile:
     return load_dugway_default_profile()
 
 
-def resolve_atmosphere(path: Path | None = None) -> tuple[AtmosphereProfile, Path | None]:
-    """Return the atmosphere profile along with the concrete source path used."""
-
-    if path is not None:
-        resolved = path.expanduser()
-        return load_atmosphere_profile(resolved), resolved
-
-    candidate = find_default_atmosphere_path()
-    if candidate is not None:
-        return load_atmosphere_profile(candidate), candidate
-
-    return load_atmosphere_profile(None), None
-
-
 def simulate_flight(
     rocket: Rocket,
     atmosphere: AtmosphereProfile,
@@ -514,7 +500,7 @@ def _cli() -> None:
 
     args = parser.parse_args()
 
-    atmosphere, atmosphere_path = resolve_atmosphere(args.atmosphere)
+    atmosphere = load_atmosphere_profile(args.atmosphere)
     rocket = build_default_rocket()
     result = simulate_flight(
         rocket,
@@ -531,10 +517,6 @@ def _cli() -> None:
     apogee = max(result.altitude)
     max_q = max(result.dynamic_pressure)
 
-    if atmosphere_path is None:
-        print("Atmosphere: bundled Dugway September 21, 2021 12Z sounding")
-    else:
-        print(f"Atmosphere: {atmosphere_path}")
     print(f"Trajectory written to {args.output}")
     print(f"Apogee: {apogee/1000:.2f} km")
     print(f"Max dynamic pressure: {max_q/1000:.1f} kPa")
