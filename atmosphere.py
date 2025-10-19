@@ -37,8 +37,15 @@ class AtmosphereProfile:
         samples: List[AtmosphericSample] = []
         with path.open("r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
+
+            def _normalize(name: str) -> str:
+                return name.strip().lstrip("\ufeff").lower()
+
             required = ["altitude_m", "temperature_k", "pressure_pa", "density_kg_m3"]
-            missing_columns = [name for name in required if name not in reader.fieldnames]
+            fieldnames = reader.fieldnames or []
+            normalized_map = {_normalize(name): name for name in fieldnames if name}
+
+            missing_columns = [name for name in required if name not in normalized_map]
             if missing_columns:
                 raise KeyError(
                     "Atmosphere CSV is missing required columns "
@@ -50,16 +57,46 @@ class AtmosphereProfile:
                 if not row or all(value in (None, "") for value in row.values()):
                     continue
 
+                normalized_row = {
+                    _normalize(key): value
+                    for key, value in row.items()
+                    if key is not None
+                }
+
                 try:
+                    altitude_raw = normalized_row.get("altitude_m")
+                    temperature_raw = normalized_row.get("temperature_k")
+                    pressure_raw = normalized_row.get("pressure_pa")
+                    density_raw = normalized_row.get("density_kg_m3")
+                    wind_u_raw = normalized_row.get("wind_u_ms", 0.0)
+                    wind_v_raw = normalized_row.get("wind_v_ms", 0.0)
+                    wind_w_raw = normalized_row.get("wind_w_ms", 0.0)
+
+                    if altitude_raw is None or temperature_raw is None or pressure_raw is None or density_raw is None:
+                        missing = [
+                            name
+                            for name, raw in (
+                                ("altitude_m", altitude_raw),
+                                ("temperature_k", temperature_raw),
+                                ("pressure_pa", pressure_raw),
+                                ("density_kg_m3", density_raw),
+                            )
+                            if raw is None
+                        ]
+                        raise KeyError(
+                            "Missing columns "
+                            f"{missing!r} at {path!s} line {line_number}"
+                        )
+
                     samples.append(
                         AtmosphericSample(
-                            altitude_m=float(row["altitude_m"]),
-                            temperature_k=float(row["temperature_k"]),
-                            pressure_pa=float(row["pressure_pa"]),
-                            density_kg_m3=float(row["density_kg_m3"]),
-                            wind_u_ms=float(row.get("wind_u_ms", 0.0) or 0.0),
-                            wind_v_ms=float(row.get("wind_v_ms", 0.0) or 0.0),
-                            wind_w_ms=float(row.get("wind_w_ms", 0.0) or 0.0),
+                            altitude_m=float(altitude_raw),
+                            temperature_k=float(temperature_raw),
+                            pressure_pa=float(pressure_raw),
+                            density_kg_m3=float(density_raw),
+                            wind_u_ms=float(wind_u_raw or 0.0),
+                            wind_v_ms=float(wind_v_raw or 0.0),
+                            wind_w_ms=float(wind_w_raw or 0.0),
                         )
                     )
                 except KeyError as exc:  # pragma: no cover - defensive guard
